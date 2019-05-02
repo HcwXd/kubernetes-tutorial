@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: kubernetes-demo-pod
+  labels:
+    app: demoApp
+spec:
+  containers:
+    - name: kubernetes-demo-container
+      image: hcwxd/kubernetes-demo
+      ports:
+        - containerPort: 3000

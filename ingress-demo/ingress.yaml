@@ -1,0 +1,18 @@
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: web
+spec:
+  rules:
+    - host: blue.demo.com
+      http:
+        paths:
+          - backend:
+              serviceName: blue-service
+              servicePort: 80
+    - host: purple.demo.com
+      http:
+        paths:
+          - backend:
+              serviceName: purple-service
+              servicePort: 80
