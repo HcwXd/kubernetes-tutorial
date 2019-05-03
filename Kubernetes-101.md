@@ -20,14 +20,14 @@ Kubernetes（K8S）是一個可以幫助我們管理微服務（microservices）
 Kubernetes 運作的最小單位，一個 Pod 對應到一個應用服務（Application）
 
 - 每個 Pod 都有一個身分證，也就是屬於這個 Pod 的 `yaml` 檔
-- 一個 Pod 裡面可以有一個或是多個 Docker 容器，但一般情況一個 Pod 最好只有一個 Container 
+- 一個 Pod 裡面可以有一個或是多個 Container，但一般情況一個 Pod 最好只有一個 Container 
 - 同一個 Pod 中的 Containers 共享相同資源及網路，彼此透過 local port number 溝通
 
 ### Worker Node
 
 Kubernetes 運作的最小硬體單位，一個 Worker Node（簡稱 Node）對應到一台機器，可以是實體機如你的筆電、或是虛擬機如 AWS 上的一台 EC2 或 GCP 上的一台 computer engine。
 
-每個 Node 中都有三個組件：kubelet、kube-proxy、Container Runtime
+每個 Node 中都有三個組件：kubelet、kube-proxy、Container Runtime。
 
 - kubelet
   - 該 Node 的管理員，負責管理該 Node 上的所有 Pods 的狀態並負責與 Master 溝通
@@ -41,7 +41,7 @@ Kubernetes 運作的最小硬體單位，一個 Worker Node（簡稱 Node）對�
 Kubernetes 運作的指揮中心，可以簡化看成一個特化的 Node 負責管理所有其他 Node。一個 Master Node（簡稱 Master）中有四個組件：kube-apiserver、etcd、kube-scheduler、kube-controller-manager。
 
 - kube-apiserver
-  - 整個 Kubernetes 管理的 API 接口，例如從 Command Line 下 kubectl 指令就會把指令送到這裏
+  - 管理整個 Kubernetes 所需 API 的接口（Endpoint），例如從 Command Line 下 kubectl 指令就會把指令送到這裏
   - 負責 Node 之間的溝通橋樑，每個 Node 彼此不能直接溝通，必須要透過 apiserver 轉介
   - 負責 Kubernetes 中的請求的身份認證與授權
 
@@ -50,7 +50,7 @@ Kubernetes 運作的指揮中心，可以簡化看成一個特化的 Node 負責
   - 用來存放 Kubernetes Cluster 的資料作為備份，當 Master 因為某些原因而故障時，我們可以透過 etcd 幫我們還原 Kubernetes 的狀態
 
 - kube-controller-manager
-  - 負責管理 Kubernetes controller 的組件，簡單來說 controller 就是 Kubernetes 裡一個個負責監視 Cluster 狀態，並在 Cluster 與預期狀態（desire state）不符時嘗試更新現有狀態（current state）
+  - 負責管理並運行 Kubernetes controller 的組件，簡單來說 controller 就是 Kubernetes 裡一個個負責監視 Cluster 狀態的 Process，例如：Node Controller、Replication Controller。這些 Process 會在 Cluster 與預期狀態（desire state）不符時嘗試更新現有狀態（current state）
   - 例如：現在要多開一台機器以應付突然增加的流量，那我的預期狀態就會更新成 N+1，現有狀態為 N，這時相對應的 controller 就會想辦法多開一台機器
   - controller-manager 的監視與嘗試更新也都需要透過訪問 kube-apiserver 達成
 
@@ -75,15 +75,15 @@ Kubernetes 中多個 Node 與 Master 的集合。基本上可以想成在同一�
 
 當使用者要部署一個新的 Pod 到 Kubernetes Cluster 時，使用者要先透過 User Command（kubectl）輸入建立 Pod 的對應指令（下面會在解說如何建立一個 Pod）。此時指令會經過一層認證確認傳送方的身份後傳遞到 Master Node 中的 API Server，API Server 會把指令備份到 etcd 。
 
-接下來 controller-manager 會從 API Server 收到需要創建一個新的 Pod 的訊息，並檢查如果資源許可，就會建立一個新的 Pod。最後 Scheduler 在定期訪問 API Server 並詢問 controller-manager 是否有建置新的 Pod，如果發現新建立的 Pod 時，Scheduler 就會負責把 Pod 配送到最適合的一個 Node 上面。
+接下來 controller-manager 會從 API Server 收到需要創建一個新的 Pod 的訊息，並檢查如果資源許可，就會建立一個新的 Pod。最後 Scheduler 在定期訪問 API Server 時，會詢問 controller-manager 是否有建置新的 Pod，如果發現新建立的 Pod 時，Scheduler 就會負責把 Pod 配送到最適合的一個 Node 上面。
 
 ### 安裝 Kubernetes
 
-要實際動手在本機端體驗如何操作 Kubernetes 前，需要分別下載 Minikube、VirtualBox 以及 kubectl 三個套件。以下都以 MacOS 平安為主：
+要實際動手在本機端體驗如何操作 Kubernetes 前，需要分別下載 Minikube、VirtualBox 以及 kubectl 三個套件。以下都以 MacOS 平台為主：
 
 Minikube
 
-- 一個 Google 發佈的輕量級工具，讓開發者可以輕鬆體驗一個的 Kubernetes Cluster。Minikube 會在本機端建立一個 Virtual Machine，並在其中運行 Kubernetes Cluster
+- 一個 Google 發佈的輕量級工具，讓開發者可以輕鬆體驗一個的 Kubernetes Cluster。Minikube 會在本機端建立 Virtual Machine，並在其中運行一個 Single-Node 的 Kubernetes Cluster
 - [Github 下載](<https://github.com/kubernetes/minikube>)
 
 VirtualBox
@@ -128,7 +128,7 @@ minikube status
 minikube stop
 ```
 
-進入 minikube 的 Node 之中
+ssh 進入 minikube 中
 
 ```
 minikube ssh
@@ -192,13 +192,13 @@ spec:
   
 - kind
   
-  該元件是什麼屬性，kind 有 `Pod`、`Node`、`Service`、`Namespace`、`ReplicationController` 等
+  該元件是什麼屬性，常見有 `Pod`、`Node`、`Service`、`Namespace`、`ReplicationController` 等
 
 - metadata
   - name
     指定該 Pod 的名稱
   - labels
-    指定該 Pod 的標籤
+    指定該 Pod 的標籤，這裡我們暫時幫它上標籤為 `app=demoApp`
 - spec
   - container.name
     指定運行出的 Container 的名稱
@@ -225,12 +225,12 @@ kubectl get pods
 
 ```
 NAME                  READY   STATUS    RESTARTS   AGE
-kubernetes-demo-pod   1/1     Running   0          62s
+kubernetes-demo-pod   1/1     Running   0          60s
 ```
 
 ### 連線到我們 Pod 的服務資源
 
-建立好我們的 Pod 之後，打開瀏覽器的 `localhost:3000` 我們會發現怎麼什麼都看不到。這是因為在 Pod 中所指定的 port，跟我們本機端的 port 是不同的。因此，我們必須還要透過 `kubectl port-forward `，把我們兩端的 port 做 mapping。
+建立好我們的 Pod 之後，打開瀏覽器的 `localhost:3000` 我們會發現怎麼什麼都看不到。這是因為在 Pod 中所指定的 port，跟我們本機端的 port 是不相通的。因此，我們必須還要透過 `kubectl port-forward `，把我們兩端的 port 做 mapping。
 
 ```
 kubectl port-forward kubernetes-demo-pod 3000:3000
@@ -242,7 +242,7 @@ kubectl port-forward kubernetes-demo-pod 3000:3000
 
 ## Kubernetes 進階三元件
 
-了解到了如何從無到有建立一個 Kubernetes Cluster 並產生一個 Pod 後，接下來我們要認識在現實應用中，我們還會搭配到哪些 Kubernetes 的進階元件。其中最重要的三個進階就是：Service、Ingress、Deployment。
+了解到了如何從無到有建立一個 Kubernetes Cluster 並產生一個 Pod 後，接下來我們要認識在現實應用中，我們還會搭配到哪些 Kubernetes 的進階元件。其中最重要的三個進階元件就是：Service、Ingress、Deployment。
 
 ### Service
 
@@ -273,7 +273,7 @@ spec:
 
 - kind
 
-  該元件是什麼屬性，kind 有 `Pod`、`Node`、`Service`、`Namespace`、`ReplicationController` 等
+  該元件是什麼屬性，常見有 `Pod`、`Node`、`Service`、`Namespace`、`ReplicationController` 等
 
 - metadata
 
@@ -316,7 +316,7 @@ kubectl get services
 
 ```
 NAME         TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)          AGE
-my-service   NodePort    10.110.237.205   <none>        3001:30391/TCP   26m
+my-service   NodePort    10.110.237.205   <none>        3001:30391/TCP   60s
 ```
 
 有了建立好的 Service 後，我們可以透過兩種方式連線我們的 Pod 的服務資源。首先，要從外部連線到我們的 Pod 資源服務，我們必須要先有我們的 Kubernetes Cluster（在這邊是 minikube）對外開放的 IP。我們先透過指令
@@ -345,7 +345,7 @@ ssh 進入我們的 minikube cluster，接著輸入指令
 curl <CLUSTER-IP>:<port>
 ```
 
-其中 `CLUSTER-IP` 就是我們用 `kbs get services` 得到我們 Service 的 IP，而 `port` 就是我們在 `yaml` 檔指定的 `port`，在這邊合起來就是 `10.110.237.205:3001`，於是我們
+其中 `CLUSTER-IP` 就是我們用 `kubectl get services` 得到我們 Service 的 IP，而 `port` 就是我們在 `yaml` 檔指定的 `port`，在這邊合起來就是 `10.110.237.205:3001`，於是我們
 
 ```
 curl 10.110.237.205:3001
@@ -355,7 +355,7 @@ curl 10.110.237.205:3001
 
 ### Deployment
 
-了解了 Service 後，接下來要來暸解第二個進階元件：Deployment。今天當我們同時要把一個 Pod 做橫向擴展，也就是複製多個相同的 Pod 在  Cluster 中同時提供服務，並監控如果有 Pod 當機我們就要重新把它啟動時，如果我們要一個 Pod 一個 Pod 透過指令建立並監控是很花費時間的。因此，我們可以透過 Deployment 這個特殊元件幫我們達成上述的要求。
+了解了 Service 後，接下來要來暸解第二個進階元件：Deployment。今天當我們同時要把一個 Pod 做橫向擴展，也就是複製多個相同的 Pod 在  Cluster 中同時提供服務，並監控如果有 Pod 當機我們就要重新把它啟動時，如果我們要一個 Pod 一個 Pod 透過指令建立並監控是很花時間的。因此，我們可以透過 Deployment 這個特殊元件幫我們達成上述的要求。
 
 同樣要建立一個 Deployment，要先撰寫屬於他的身分證。
 
@@ -389,7 +389,7 @@ spec:
 
 - kind
 
-  該元件是什麼屬性，kind 有 `Pod`、`Node`、`Service`、`Namespace`、`ReplicationController` 等
+  該元件是什麼屬性，常見有 `Pod`、`Node`、`Service`、`Namespace`、`ReplicationController` 等
 
 - metadata
 
@@ -424,16 +424,20 @@ kubectl get deploy
 
 ```
 NAME            READY   UP-TO-DATE   AVAILABLE   AGE
-my-deployment   3/3     3            3           3m
+my-deployment   3/3     3            3           60s
 ```
 
 接著我們在看 Pod 們有沒有乖乖按照 Deployment 建立
 
 ```
+kubectl get pods
+```
+
+```
 NAME                             READY   STATUS    RESTARTS   AGE
-my-deployment-5454f687cd-bxjfz   1/1     Running   0          3m56s
-my-deployment-5454f687cd-gszbr   1/1     Running   0          3m56s
-my-deployment-5454f687cd-k6zfv   1/1     Running   0          3m56s
+my-deployment-5454f687cd-bxjfz   1/1     Running   0          60s
+my-deployment-5454f687cd-gszbr   1/1     Running   0          60s
+my-deployment-5454f687cd-k6zfv   1/1     Running   0          60s
 ```
 
 這邊我們可以看到三個 Pod 都被建立好了，我們就成功做到了 Pod 的橫向擴展。而除了 Pod 的橫向擴展外，Deployment 的另外一個好處就是可以幫我們做到無停機的系統升級（Zero Downtime Rollout）。也就是說，當我們要更新我們的 Pod 時，Kubernetes 並不會直接砍掉我們所有的 Pod，而是會建立新的 Pod，等新的 Pod 開始正常運行後，再來取代舊的 Pod。
@@ -496,13 +500,13 @@ spec:
       terminationGracePeriodSeconds: 30
 ```
 
-我們把其中 `containerPort: 3000` 改成 3001 後儲存，Kubernetes 就會開始幫我們進行更新。這時我們繼續用指令 `kubectl get pods` 就會看到
+我們把其中 `containerPort: 3000` 改成 `3001` 後儲存，Kubernetes 就會開始幫我們進行更新。這時我們繼續用指令 `kubectl get pods` 就會看到
 
 ```
 NAME                             READY   STATUS              RESTARTS   AGE
-my-deployment-5454f687cd-bxjfz   1/1     Running             0          10m
-my-deployment-5454f687cd-gszbr   1/1     Terminating         0          10m
-my-deployment-5454f687cd-k6zfv   1/1     Running             0          10m
+my-deployment-5454f687cd-bxjfz   1/1     Running             0          60s
+my-deployment-5454f687cd-gszbr   1/1     Terminating         0          60s
+my-deployment-5454f687cd-k6zfv   1/1     Running             0          60s
 my-deployment-78dc8dcb89-59272   0/1     ContainerCreating   0          1s
 my-deployment-78dc8dcb89-dwtls   1/1     Running             0          5s
 ```
@@ -511,9 +515,9 @@ my-deployment-78dc8dcb89-dwtls   1/1     Running             0          5s
 
 ```
 NAME                             READY   STATUS        RESTARTS   AGE
-my-deployment-5454f687cd-bxjfz   1/1     Terminating   0          10m
-my-deployment-5454f687cd-gszbr   1/1     Terminating   0          10m
-my-deployment-5454f687cd-k6zfv   1/1     Terminating   0          10m
+my-deployment-5454f687cd-bxjfz   1/1     Terminating   0          60s
+my-deployment-5454f687cd-gszbr   1/1     Terminating   0          60s
+my-deployment-5454f687cd-k6zfv   1/1     Terminating   0          60s
 my-deployment-78dc8dcb89-59272   1/1     Running       0          11s
 my-deployment-78dc8dcb89-7b7hg   1/1     Running       0          7s
 my-deployment-78dc8dcb89-dwtls   1/1     Running       0          15s
@@ -552,11 +556,11 @@ kubectl rollout undo deploy my-deployment --to-revision=2
 
 而 Ingress 可以透過 HTTP/HTTPS，在我們眾多的 Service 前搭建一個 reverse-proxy。這樣 Ingress 可以幫助我們統一一個對外的 port number，並且根據 hostname 或是 pathname 決定封包要轉發到哪個 Service 上，如同下圖的比較：
 
-![K8s-Overview](https://github.com/HcwXd/kubernetes-tutorial/blob/master/src/Ingress-concept.jpeg?raw=true)在 Kubernetes 中，Ingress 這項服務其實是由 Ingress Resources、Ingress Server、Ingress Controller 構成。其中 Ingress Resources 就是定義 Ingress 的身分證，而 Ingress Server 則是實體化用來接收 HTTP/HTTPS 連線的網路伺服器，但實際上 Ingress Server 有各式各樣的實作，就如同市面上的 Web Server 琳瑯滿目一樣。因此，Ingress Controller 就是一個可以把定義好的 Ingress Resources 設定轉換成特定 Ingress Server 實作的角色。
+![K8s-Overview](https://github.com/HcwXd/kubernetes-tutorial/blob/master/src/Ingress-concept.jpeg?raw=true)在 Kubernetes 中，Ingress 這項服務其實是由 Ingress Resources、Ingress Server、Ingress Controller 構成。其中 Ingress Resources 就是定義 Ingress 的身分證，而 Ingress Server 則是實體化用來接收 HTTP/HTTPS 連線的網路伺服器。但實際上，Ingress Server 有各式各樣的實作，就如同市面上的 Web Server 琳瑯滿目一樣。因此，Ingress Controller 就是一個可以把定義好的 Ingress Resources 設定轉換成特定 Ingress Server 實作的角色。
 
 舉例來說，Kubernetes 由官方維護的兩種 Ingress Controller 就有 [ingress-gce](https://github.com/kubernetes/ingress-gce/blob/master/README.md) 跟 [ingress-nginx](https://github.com/kubernetes/ingress-nginx/blob/master/README.md)，分別可以對應轉換成 GCE 與 Nginx。也有其他非官方在維護的 Controller，詳細的列表可見官網的 [additional-controllers](https://kubernetes.io/docs/concepts/services-networking/ingress-controllers/#additional-controllers)。
 
-接下來我們要來試著建立一個 Ingress 物件去根據 hostname 轉發封包到不同的 Pod 上面。所以第一步，我們要用 Deployment 建立好幾個不同的 Pod。在這邊我們直接透過準備好的兩個 Image 來建立其中的 Container，blue-whale 這個 Image 會監聽 3000 port 然後在瀏覽器上被存取時會吐出藍色的鯨魚，purple-whale 則會吐出紫色的鯨魚。
+接下來我們要來試著建立一個 Ingress 物件去根據 hostname 轉發封包到不同的 Pod 上面。所以第一步，我們要用 Deployment 建立好幾個不同的 Pod。在這邊我們直接透過準備好的兩個 Image 來建立其中的 Container，blue-whale 這個 Image 裡的程式會監聽 3000 port 然後在瀏覽器上被存取時會吐出藍色的鯨魚，purple-whale 則會吐出紫色的鯨魚。
 
 `deployment.yaml`
 
@@ -579,6 +583,7 @@ spec:
             - containerPort: 3000
 
 ---
+
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
@@ -595,17 +600,17 @@ spec:
           image: hcwxd/purple-whale
           ports:
             - containerPort: 3000
-
+、
 ```
 
 接著我們就可以透過 `kubectl create -f deployment.yaml`  建立好我們的 Pod。
 
 ```
 AME                           READY   STATUS    RESTARTS   AGE
-blue-nginx-6b68c797c7-28tkz    1/1     Running   0          35m
-blue-nginx-6b68c797c7-8ww8l    1/1     Running   0          35m
-purple-nginx-84854fd7c-8g4nl   1/1     Running   0          35m
-purple-nginx-84854fd7c-tmrbs   1/1     Running   0          35m
+blue-nginx-6b68c797c7-28tkz    1/1     Running   0         60s
+blue-nginx-6b68c797c7-8ww8l    1/1     Running   0         60s
+purple-nginx-84854fd7c-8g4nl   1/1     Running   0         60s
+purple-nginx-84854fd7c-tmrbs   1/1     Running   0         60s
 ```
 
 建立好了 Pod 們後，接下來我們就要建立這些 Pod 對外的各自 Service，在這邊可以透過上面的圖來複習各自的關係。在這邊我們會把各至 Container 上的 3000 port 全部都轉到 80 port 上。
@@ -627,6 +632,7 @@ spec:
       targetPort: 3000
 
 ---
+
 apiVersion: v1
 kind: Service
 metadata:
@@ -645,13 +651,13 @@ spec:
 
 ```
 NAME             TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)        AGE
-blue-service     NodePort    10.111.192.164   <none>        80:30492/TCP   49m
-purple-service   NodePort    10.107.21.77     <none>        80:32086/TCP   49m
+blue-service     NodePort    10.111.192.164   <none>        80:30492/TCP   60s
+purple-service   NodePort    10.107.21.77     <none>        80:32086/TCP   60s
 ```
 
-最後，我們就可以來建立我們的主角 Ingress 了！在這邊我們的 Ingress 只有很簡單的規則，他會把所有發送到 `blue.demo.com` 的封包交給 service  `blue-service` 負責，而根據上面 `service.yaml` 的定義，他會再轉交給 `blue-nginx` 這個 Pod。
+最後，我們就可以來建立我們的主角 Ingress 了！在這邊我們的 Ingress 只有很簡單的規則，他會把所有發送到 `blue.demo.com` 的封包交給 service  `blue-service` 負責，而根據上面 `service.yaml` 的定義，他會再轉交給 `blue-nginx` 這個 Pod。而發送給 `purple.demo.com` 則會轉交給 `purple-nginx`。
 
-在這邊，我們要先使用指令 `minikube addons enable ingress` 來讓啟用 minikube 的 ingress 功能。
+在這邊，我們要先記得使用指令 `minikube addons enable ingress` 來讓啟用 minikube 的 ingress 功能。接著，我們就來撰寫 ingress 的身分證。
 
 `ingress.yaml`
 
@@ -674,16 +680,13 @@ spec:
           - backend:
               serviceName: purple-service
               servicePort: 80
-
 ```
 
-我們一樣透過 `kubectl create -f ingress.yaml ` 來建立我們的 ingress 物件。
-
-我們可以透過 `kbs get ingress` 來查看我們的 ingress 狀況：
+我們一樣透過 `kubectl create -f ingress.yaml ` 來建立我們的 ingress 物件。並使用 `kubectl get ingress` 來查看我們的 ingress 狀況：
 
 ```
 NAME   HOSTS                           ADDRESS     PORTS   AGE
-web    blue.demo.com,purple.demo.com   10.0.2.15   80      52m
+web    blue.demo.com,purple.demo.com   10.0.2.15   80      60s
 ```
 
 接下來我們要來測試 ingress 有沒有乖乖幫我們轉發。因為我們的 Cluster 實際上對外的 ip 都是我們透過指令 `minikube ip` 會看到的 `192.168.99.100`，這樣我們要怎麼同時讓這個 ip 可以是我們設定規則中的 `blue.demo.com` 以及 `purple.demo.com` 呢？
@@ -740,22 +743,21 @@ kubectl get all
 
 ```
 NAME                                          READY   STATUS    RESTARTS   AGE
-pod/peddling-hog-mariadb-0                    1/1     Running   0          3m48s
-pod/peddling-hog-wordpress-7bf6d69c8b-b5flx   1/1     Running   1          3m48s
+pod/peddling-hog-mariadb-0                    1/1     Running   0          60s
+pod/peddling-hog-wordpress-7bf6d69c8b-b5flx   1/1     Running   1          60s
 
 NAME                             TYPE           CLUSTER-IP       EXTERNAL-IP   PORT(S)                      AGE
-service/kubernetes               ClusterIP      10.96.0.1        <none>        443/TCP                      7d1h
-service/peddling-hog-mariadb     ClusterIP      10.109.96.113    <none>        3306/TCP                     3m49s
-service/peddling-hog-wordpress   LoadBalancer   10.101.157.184   <pending>     80:30439/TCP,443:31824/TCP   3m49s
+service/peddling-hog-mariadb     ClusterIP      10.109.96.113    <none>        3306/TCP                     60s
+service/peddling-hog-wordpress   LoadBalancer   10.101.157.184   <pending>     80:30439/TCP,443:31824/TCP   60s
 
 NAME                                     READY   UP-TO-DATE   AVAILABLE   AGE
-deployment.apps/peddling-hog-wordpress   1/1     1            1           3m49s
+deployment.apps/peddling-hog-wordpress   1/1     1            1           60s
 
 NAME                                                DESIRED   CURRENT   READY   AGE
-replicaset.apps/peddling-hog-wordpress-7bf6d69c8b   1         1         1       3m49s
+replicaset.apps/peddling-hog-wordpress-7bf6d69c8b   1         1         1       60s
 
 NAME                                    READY   AGE
-statefulset.apps/peddling-hog-mariadb   1/1     3m49s
+statefulset.apps/peddling-hog-mariadb   1/1     60s
 ```
 
 可以看到我們透過 Chart 一次就安裝與部署了兩個 Pod、兩個 Service 以及其他各種元件。如果要一次把所有 Chart 所安裝的元件刪除，我們可以先透過 `helm list` 列出我們所有的 Chart。
@@ -769,7 +771,7 @@ peddling-hog	1       	Fri Apr 26 16:08:30 2019	DEPLOYED	wordpress-5.9.0
 
 ### Chart 的運作方式
 
-嘗試完從 Chart 部署元件後，我們可以進一步來暸解 Chart 是如何運作的。我們可以到 Wordpress chart 的 [Github](https://github.com/helm/charts/tree/master/stable/wordpress) 上看到這個 Chart 的檔案結構，或是透過指令來建立一個最簡單的 Chart
+嘗試完從 Chart 部署元件後，我們可以進一步來暸解 Chart 是如何運作的。我們可以到 Wordpress chart 的 [Github](https://github.com/helm/charts/tree/master/stable/wordpress) 上觀察這個 Chart 的檔案結構，或是透過指令來建立一個最簡單的 Chart
 
 ```
 helm create helm-demo
@@ -816,7 +818,7 @@ helm create helm-demo
 kubectl 中的各項資源的名稱其實也都有內建的簡寫，可以透過指令
 
 ```
-kbs api-resources
+kubectl api-resources
 ```
 
 去看到各個資源的簡寫，例如 deployments 可以簡寫成 `deploy`、services 簡寫成 `svc` 等。
