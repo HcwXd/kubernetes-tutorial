@@ -1,0 +1,16 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: blue-nginx
+spec:
+  replicas: 2
+  template:
+    metadata:
+      labels:
+        app: blue-nginx
+    spec:
+      containers:
+        - name: nginx
+          image: hcwxd/blue-whale
+          ports:
+            - containerPort: 3000
