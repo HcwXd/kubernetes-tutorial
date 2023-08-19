@@ -1,5 +1,7 @@
 # Kubernetes - 基礎概念 101
 
+網頁好讀版：[https://chengweihu.com/kubernetes-tutorial-1-pod-node/](https://chengweihu.com/kubernetes-tutorial-1-pod-node/)
+
 > Kubernetes 想解決的問題：手動部署多個容器到多台機器上並監測管理這些容器的狀態非常麻煩。
 >
 > Kubernetes 要提供的解法：提供一個平台以較高層次的抽象化去自動化操作與管理容器們。
